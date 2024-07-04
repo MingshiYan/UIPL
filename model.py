@@ -109,12 +109,16 @@ class UIPL(nn.Module):
         log_loss = self.cross_loss(torch.sigmoid(scores), y)
 
         # BPRLoss for recommendation
+        tar_user_emb = b_user_embedding[user_ids]
+        inv_user_emb = invariant_user_emb[-1][user_ids]
+        var_user_emb = tar_user_emb - inv_user_emb
+
         invariant_user_emb = torch.mean(invariant_user_emb, dim=0)
         inv_user_emb = invariant_user_emb[user_ids]
-        tar_user_emb = b_user_embedding[user_ids]
+
         item_emb = item_embedding[rec_item_ids]
         inv_scores = torch.sum(inv_user_emb.unsqueeze(1) * item_emb, dim=-1)
-        tar_scores = torch.sum(tar_user_emb.unsqueeze(1) * item_emb, dim=-1)
+        tar_scores = torch.sum(var_user_emb.unsqueeze(1) * item_emb, dim=-1)
         scores = self.beta * inv_scores + (1 - self.beta) * tar_scores
         p_scores, n_scores = torch.chunk(scores, 2, dim=-1)
         bpr_loss = self.bpr_loss(p_scores, n_scores)
@@ -139,7 +143,10 @@ class UIPL(nn.Module):
 
             user_embs = torch.stack(user_embs)
             invariant_user_emb = self.M(user_embs)
+            tar_inv_enb = invariant_user_emb[-1]
             invariant_user_emb = torch.mean(invariant_user_emb, dim=0)
+
+            b_user_embedding = b_user_embedding - tar_inv_enb
 
             self.storage_user_embeddings = torch.stack([self.beta * invariant_user_emb, (1 - self.beta) * b_user_embedding]).transpose(0, 1)
             self.storage_item_embeddings = item_embedding.transpose(0, 1).unsqueeze(0)

@@ -78,6 +78,7 @@ if __name__ == '__main__':
     else:
         raise Exception('data_name cannot be None')
 
+    # args.behaviors = ast.literal_eval(args.behaviors)
     # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     # args.device = device
 
