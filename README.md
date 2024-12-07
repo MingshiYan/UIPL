@@ -18,4 +18,12 @@ or
 
 `./b_tmall.sh`
 
-Please refer to the log files in the log/model folder for detailed parameter settings for each dataset.
+
+The optimal hyperparameters for the model are shown in the table below:
+
+| Dataset | log_reg (&lambda;) | ort_reg(&alpha;) | nce_reg(&beta;) | kn_reg(&gamma;) | reg_weight | temperature(&tau;) |  lr  |
+|---------|:------------------:|:----------------:|:---------------:|:---------------:|:----------:|:------------------:|:----:|
+| Tmall   |        0.01        |       1e-4       |       0.1       |       0.1       |    1e-3    |        0.1         | 1e-3 |
+| Taobao  |        0.01        |       1e-4       |      0.01       |      0.01       |    1e-3    |        0.1         | 1e-3 |
+| Yelp    |        0.1         |       1e-3       |      0.01       |       0.1       |    1e-3    |        0.5         | 1e-3 |
+| ML10M   |        0.5         |       1e-3       |       0.1       |       0.1       |    1e-3    |        0.3         | 1e-3 |

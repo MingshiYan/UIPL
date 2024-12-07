@@ -16,7 +16,6 @@ import torch.nn as nn
 from loguru import logger
 
 from data_set import DataSet
-from model import UIPL
 
 from trainer import Trainer
 
@@ -37,14 +36,19 @@ if __name__ == '__main__':
 
     parser.add_argument('--embedding_size', type=int, default=64, help='')
     parser.add_argument('--reg_weight', type=float, default=1e-3, help='')
-    parser.add_argument('--lamb', type=float, default=0.5, help='')
     parser.add_argument('--beta', type=float, default=0.5, help='')
+    parser.add_argument('--kl_reg', type=float, default=1.0, help='')
+    parser.add_argument('--ort_reg', type=float, default=1.0, help='')
+    parser.add_argument('--log_reg', type=float, default=1.0, help='')
+    parser.add_argument('--nce_reg', type=float, default=1.0, help='')
+    parser.add_argument('--bpr_reg', type=float, default=1.0, help='')
     parser.add_argument('--layers', type=int, default=2)
 
-    parser.add_argument('--data_name', type=str, default='tmall', help='')
+    parser.add_argument('--data_name', type=str, default='yelp', help='')
     parser.add_argument('--behaviors', type=str, help='')
     parser.add_argument('--loss_type', type=str, default='bpr', help='')
     parser.add_argument('--neg_count', type=int, default=10)
+    parser.add_argument('--nce_temperature', type=float, default=0.5)
 
     parser.add_argument('--if_load_model', type=bool, default=False, help='')
     parser.add_argument('--gpu_no', type=int, default=1, help='')
@@ -59,7 +63,7 @@ if __name__ == '__main__':
     parser.add_argument('--model_path', type=str, default='./check_point', help='')
     parser.add_argument('--check_point', type=str, default='', help='')
     parser.add_argument('--log_name', type=str, default='tmall', help='')
-    parser.add_argument('--model_name', type=str, default='tmall', help='')
+    parser.add_argument('--model_name', type=str, default='model_nce_all_pt_item_linear', help='')
     parser.add_argument('--device', type=str, default='cuda:0', help='')
 
     args = parser.parse_args()
@@ -75,6 +79,18 @@ if __name__ == '__main__':
     elif args.data_name == 'taobao':
         args.data_path = '../data/taobao'
         args.behaviors = ['view', 'cart', 'buy']
+    elif args.data_name == 'tmall_cold':
+        args.data_path = '../data/Tmall_cold_1000'
+        args.behaviors = ['click', 'collect', 'cart', 'buy']
+    elif args.data_name == 'yelp_cold':
+        args.data_path = '../data/Yelp_cold_1000'
+        args.behaviors = ['tip', 'neutral', 'neg', 'pos']
+    elif args.data_name == 'ml_cold':
+        args.data_path = '../data/ML10M_cold_1000'
+        args.behaviors = ['neutral', 'neg', 'pos']
+    elif args.data_name == 'taobao_cold':
+        args.data_path = '../data/taobao_cold_1000'
+        args.behaviors = ['view', 'cart', 'buy']
     else:
         raise Exception('data_name cannot be None')
 
@@ -88,18 +104,25 @@ if __name__ == '__main__':
     logfile = '{}_enb_{}_{}'.format(args.data_name, args.embedding_size, TIME)
     # args.train_writer = SummaryWriter('./log/train/' + logfile)
     # args.test_writer = SummaryWriter('./log/test/' + logfile)
-    logger.add('./log/{}/{}.log'.format(args.model_name, logfile), encoding='utf-8')
+    logger.add('./log/{}/{}.log'.format(args.log_name, logfile), encoding='utf-8')
 
     start = time.time()
     dataset = DataSet(args)
-    model = UIPL(args, dataset).to(args.device)
+
+    if not os.path.exists(args.model_path):
+        os.makedirs(args.model_path)
+
+    # model = UIPL(args, dataset).to(args.device)
+    modules = __import__(args.model_name)
+    model = getattr(modules, 'UIPL')(args, dataset).to(args.device)
+
     trainer = Trainer(model, dataset, args)
 
     logger.info(args.__str__())
     logger.info(model)
 
     trainer.train_model()
-    # trainer.evaluate(0, 5, dataset.test_dataset(), dataset.test_interacts, dataset.test_gt_length)
+    # trainer.evaluate(0, 5, dataset.test_dataset(), dataset.test_interacts, dataset.test_gt_length, dataset.valid_mask)
     logger.info('train end total cost time: {}'.format(time.time() - start))
 
 

@@ -7,16 +7,16 @@ lr=('0.001')
 # lr=('0.01')
 emb_size=(64)
 reg_weight=('0.001')
-kl_regs=('0.1')
+kl_regs=('0.01')
 # kl_regs=('0.1' '0.5' '1.0')
 # kl_regs=('0.0' '0.1' '0.3' '0.5' '0.7' '1.0')
 ort_regs=('0.0001')
 # ort_regs=('0.0' '0.0001' '0.001' '0.01' '0.1' '1.0')
-log_regs=('0.01')
+log_regs=('0.1')
 # log_regs=('0.01' '0.1' '0.5')
 # log_regs=('0.0')
 # log_regs=('0.01' '0.1' '0.5' '1.0')
-nce_regs=('0.1')
+nce_regs=('0.01')
 # nce_regs=('0.01' '0.1')
 # nce_regs=('0.0')
 # nce_regs=('0.001' '0.01' '0.1' '0.5' '1.0')
@@ -26,11 +26,10 @@ temperature=('0.1')
 
 
 
-
-dataset=('tmall')
+dataset=('taobao')
 model_name='model_nce_all_pt_item_linear1_loss'
 log_name='model_nce_all_pt_item_linear1_only_bpr'
-device='cuda:6'
+device='cuda:5'
 batch_size=1024
 decay=('0')
 # neg_count=(5 10 15 20)

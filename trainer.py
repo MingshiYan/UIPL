@@ -34,7 +34,7 @@ class Trainer(object):
         self.min_epoch = args.min_epoch
         self.epochs = args.epochs
         self.model_path = args.model_path
-        self.data_name = args.data_name
+        self.model_name = args.model_name
 
         self.device = args.device
         self.TIME = args.TIME
@@ -56,10 +56,6 @@ class Trainer(object):
 
     @logger.catch()
     def train_model(self):
-        train_dataset_loader = DataLoader(dataset=self.dataset.train_dataset(),
-                                          batch_size=self.batch_size,
-                                          shuffle=True)
-
         # best_result = np.zeros(len(self.topk) * len(self.metrics))
         best_result = 0
         best_dict = {}
@@ -68,11 +64,16 @@ class Trainer(object):
         final_test = None
         for epoch in range(self.epochs):
 
+            # self.dataset.load_train_samples(epoch)
+            train_dataset_loader = DataLoader(dataset=self.dataset.train_dataset(),
+                                              batch_size=self.batch_size,
+                                              shuffle=True)
+
             self.model.train()
             test_metric_dict, validate_metric_dict = self._train_one_epoch(train_dataset_loader, epoch)
 
             if validate_metric_dict is not None:
-                result = validate_metric_dict['hit@20']
+                result = validate_metric_dict['hit@10']
                 # early stop
                 if result - best_result > 0:
                     final_test = test_metric_dict
@@ -120,7 +121,7 @@ class Trainer(object):
         # validate
         start_time = time.time()
         validate_metric_dict = self.evaluate(epoch, self.test_batch_size, self.dataset.validate_dataset(),
-                                             self.dataset.validation_interacts, self.dataset.validation_gt_length)
+                                             self.dataset.validation_interacts, self.dataset.validation_gt_length, self.dataset.valid_mask)
         epoch_time = time.time() - start_time
         logger.info(
             f"validate %d cost time %.2fs, result: %s " % (epoch + 1, epoch_time, validate_metric_dict.__str__()))
@@ -128,7 +129,7 @@ class Trainer(object):
         # test
         start_time = time.time()
         test_metric_dict = self.evaluate(epoch, self.test_batch_size, self.dataset.test_dataset(),
-                                         self.dataset.test_interacts, self.dataset.test_gt_length)
+                                         self.dataset.test_interacts, self.dataset.test_gt_length, self.dataset.test_mask)
         epoch_time = time.time() - start_time
         logger.info(
             f"test %d cost time %.2fs, result: %s " % (epoch + 1, epoch_time, test_metric_dict.__str__()))
@@ -137,7 +138,7 @@ class Trainer(object):
 
     @logger.catch()
     @torch.no_grad()
-    def evaluate(self, epoch, test_batch_size, dataset, gt_interacts, gt_length):
+    def evaluate(self, epoch, test_batch_size, dataset, gt_interacts, gt_length, mask_interacts):
         data_loader = DataLoader(dataset=dataset, batch_size=test_batch_size)
         self.model.eval()
         start_time = time.time()
@@ -149,7 +150,6 @@ class Trainer(object):
             )
         )
         topk_list = []
-        train_items = self.dataset.train_behavior_dict[self.behaviors[-1]]
         for batch_index, batch_data in iter_data:
             batch_data = batch_data.to(self.device)
             start = time.time()
@@ -158,7 +158,7 @@ class Trainer(object):
 
             for index, user in enumerate(batch_data):
                 user_score = scores[index]
-                items = train_items.get(str(user.item()), None)
+                items = mask_interacts.get(str(user.item()), None)
                 if items is not None:
                     user_score[items] = -np.inf
                 _, topk_idx = torch.topk(user_score, max(self.topk), dim=-1)
@@ -186,4 +186,4 @@ class Trainer(object):
         return metric_dict
 
     def save_model(self, model):
-        torch.save(model.state_dict(), os.path.join(self.model_path, self.data_name + self.TIME + '.pth'))
+        torch.save(model.state_dict(), os.path.join(self.model_path, self.model_name + self.TIME + '.pth'))
